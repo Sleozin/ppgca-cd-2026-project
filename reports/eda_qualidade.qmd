@@ -1,0 +1,278 @@
+---
+title: "Diagnóstico de Qualidade de Dados"
+subtitle: "PPGCA · Introdução à Ciência de Dados · Semana 04"
+author: "Grupo: [nome dos integrantes]"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+    highlight-style: github
+    self-contained: true
+lang: pt-BR
+---
+
+<!-- 
+  INSTRUÇÕES DE USO
+  -----------------
+  1. Substitua o caminho em DATA_PATH pelo seu arquivo (CSV ou Parquet).
+     Se ainda não tiver o raw/ do Sprint 1, use um dataset público —
+     sugestões: Olist (Kaggle), Portal da Transparência, ou qualquer
+     CSV com ao menos 5.000 linhas e colunas numéricas.
+
+  2. Execute célula por célula, leia os outputs e preencha a
+     Tabela de Decisões na Seção 2 com base no que observar.
+
+  3. Na Seção 3, escreva o código de limpeza com base nas decisões
+     documentadas. Esse código é o rascunho do transform.py do Sprint 2.
+
+  4. Renderize com: uv run quarto render eda_qualidade.qmd
+     O HTML gerado é o entregável desta semana.
+-->
+
+```{python}
+#| label: setup
+#| message: false
+
+import duckdb
+import pandas as pd
+
+# -----------------------------------------------------------------
+# CONFIGURAÇÃO: ajuste apenas esta variável
+# Aceita .parquet, .csv ou glob (ex: 'data/raw/*.json')
+# -----------------------------------------------------------------
+DATA_PATH = "data/raw/seu_arquivo.csv"   # <-- substitua aqui
+
+con = duckdb.connect()
+```
+
+---
+
+## 1. Diagnóstico
+
+### 1.1 Perfil geral do dataset
+
+O `SUMMARIZE` do DuckDB retorna contagem, nulos, mínimo, máximo, média e
+desvio padrão de todas as colunas em uma única passagem sobre o arquivo,
+sem carregar tudo na RAM.
+
+```{python}
+#| label: perfil-geral
+
+perfil = con.sql(f"SUMMARIZE SELECT * FROM '{DATA_PATH}'").df()
+
+# Exibir apenas as colunas mais relevantes para o diagnóstico
+print(perfil[['column_name', 'column_type', 'count', 'null_percentage',
+              'min', 'max', 'avg']].to_string(index=False))
+```
+
+### 1.2 Carregar o dataset para análise fina
+
+```{python}
+#| label: carregar
+
+df = con.sql(f"SELECT * FROM '{DATA_PATH}'").df()
+
+print(f"Shape: {df.shape[0]:,} linhas x {df.shape[1]} colunas")
+print(f"Memória: {df.memory_usage(deep=True).sum() / 1e6:.1f} MB")
+df.head()
+```
+
+### 1.3 Mapa de nulos
+
+```{python}
+#| label: mapa-nulos
+
+nulos = (
+    pd.DataFrame({
+        'ausentes': df.isnull().sum(),
+        'percentual': (df.isnull().sum() / len(df) * 100).round(1)
+    })
+    .query("ausentes > 0")
+    .sort_values('percentual', ascending=False)
+)
+
+if nulos.empty:
+    print("Nenhum valor nulo encontrado.")
+else:
+    print(nulos.to_string())
+```
+
+### 1.4 Correlação entre ausências
+
+Valores próximos de 1 indicam que duas colunas tendem a estar nulas
+juntas, o que sugere problema sistêmico na origem. Valores próximos
+de 0 indicam ausências independentes.
+
+```{python}
+#| label: correlacao-ausencias
+
+# Instalar se necessário: uv add missingno --dev
+try:
+    import missingno as msno
+    import matplotlib.pyplot as plt
+
+    if nulos.empty:
+        print("Sem nulos para visualizar.")
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 4))
+        msno.bar(df, ax=axes[0], fontsize=9)
+        axes[0].set_title("Completude por coluna")
+        msno.heatmap(df, ax=axes[1], fontsize=9)
+        axes[1].set_title("Correlação entre ausências")
+        plt.tight_layout()
+        plt.show()
+
+except ImportError:
+    print("missingno não instalado. Execute: uv add missingno --dev")
+    print("Alternativa: use o mapa de nulos da seção 1.3.")
+```
+
+### 1.5 Distribuição das variáveis numéricas
+
+```{python}
+#| label: distribuicao-numericas
+
+numericas = df.select_dtypes(include='number')
+
+if numericas.empty:
+    print("Nenhuma coluna numérica encontrada.")
+else:
+    print(numericas.describe().round(2).to_string())
+```
+
+### 1.6 Diagnóstico de outliers (IQR)
+
+```{python}
+#| label: outliers-iqr
+
+def resumo_outliers(series: pd.Series) -> dict:
+    q1 = series.quantile(0.25)
+    q3 = series.quantile(0.75)
+    iqr = q3 - q1
+    limite_inf = q1 - 1.5 * iqr
+    limite_sup = q3 + 1.5 * iqr
+    n_outliers = ((series < limite_inf) | (series > limite_sup)).sum()
+    return {
+        'limite_inferior': round(limite_inf, 2),
+        'limite_superior': round(limite_sup, 2),
+        'n_outliers': n_outliers,
+        'pct_outliers': round(n_outliers / len(series) * 100, 1)
+    }
+
+if not numericas.empty:
+    resumo = pd.DataFrame(
+        {col: resumo_outliers(numericas[col].dropna())
+         for col in numericas.columns}
+    ).T
+    print(resumo.to_string())
+```
+
+---
+
+## 2. Mapa de Decisões
+
+> **Instrução:** preencha esta tabela com base nos outputs da Seção 1.
+> Cada linha representa uma coluna do dataset que requer alguma ação.
+> Colunas sem problemas não precisam ser listadas.
+> Esta tabela é o documento de rastreabilidade das decisões que vão
+> para o `transform.py` do Sprint 2.
+
+| Coluna | % Nulos | Outliers? | Estratégia | Justificativa |
+|--------|--------:|:---------:|------------|---------------|
+| *ex: preco* | *12%* | *Sim* | *Winsorização (IQR)* | *Outliers confirmados como erro de digitação; linha preservada para análise de volume* |
+| *ex: categoria* | *3%* | *N/A* | *Moda* | *Variável categórica com baixa cardinalidade; ausência parece aleatória* |
+| *ex: descricao* | *41%* | *N/A* | *Drop coluna* | *Mais de 40% ausente; coluna não será usada na modelagem* |
+
+**Estratégias disponíveis:**
+`mediana` · `média` · `moda` · `constante ("nao_informado")` ·
+`interpolate` · `dropna (linha)` · `drop (coluna)` · `winsorização` ·
+`quarentena` · `manter nulo`
+
+---
+
+## 3. Transformações Rascunho
+
+> **Instrução:** implemente abaixo o código de limpeza baseado nas
+> decisões da Seção 2. Não precisa estar perfeito: este é o rascunho
+> que será refatorado e integrado ao `transform.py` no Sprint 2.
+> Use `assign()` para imputações e adicione um `assert` ao final
+> de cada transformação para verificar o resultado.
+
+```{python}
+#| label: transformacoes
+
+# Ponto de partida: copie df para não modificar o original
+df_limpo = df.copy()
+
+# ------------------------------------------------------------------
+# EXEMPLO — substitua pelos tratamentos do seu dataset
+# ------------------------------------------------------------------
+
+# Imputação de nulos com mediana (variável numérica)
+# col = 'nome_da_coluna'
+# mediana = df_limpo[col].median()
+# df_limpo = df_limpo.assign(
+#     **{col: lambda x: x[col].fillna(mediana)}
+# )
+# assert df_limpo[col].isnull().sum() == 0, f"Ainda há nulos em {col}"
+
+# Winsorização de outliers (IQR)
+# q1 = df_limpo[col].quantile(0.25)
+# q3 = df_limpo[col].quantile(0.75)
+# iqr = q3 - q1
+# df_limpo = df_limpo.assign(
+#     **{col: lambda x: x[col].clip(
+#         lower=q1 - 1.5 * iqr,
+#         upper=q3 + 1.5 * iqr
+#     )}
+# )
+
+# Remoção de coluna com muitos nulos
+# df_limpo = df_limpo.drop(columns=['coluna_com_muitos_nulos'])
+
+# ------------------------------------------------------------------
+print(f"Shape original:  {df.shape}")
+print(f"Shape após limpeza: {df_limpo.shape}")
+print(f"Nulos restantes:\n{df_limpo.isnull().sum()[df_limpo.isnull().sum() > 0]}")
+```
+
+### 3.1 Verificação final
+
+```{python}
+#| label: verificacao-final
+
+# Resumo do que mudou entre df original e df_limpo
+print("=== Comparação: antes x depois ===\n")
+
+for col in df.columns:
+    if col not in df_limpo.columns:
+        print(f"  {col}: REMOVIDA")
+        continue
+
+    nulos_antes = df[col].isnull().sum()
+    nulos_depois = df_limpo[col].isnull().sum()
+
+    if nulos_antes != nulos_depois:
+        print(f"  {col}: {nulos_antes} nulos → {nulos_depois} nulos")
+
+    if df[col].dtype in ['float64', 'int64']:
+        max_antes = df[col].max()
+        max_depois = df_limpo[col].max()
+        if max_antes != max_depois:
+            print(f"  {col}: max {max_antes:.2f} → {max_depois:.2f}")
+```
+
+---
+
+## 4. Próximos Passos (Sprint 2)
+
+> Registre aqui o que ainda precisa ser feito no `transform.py`
+> para transformar o raw em trusted.
+
+- [ ] Refatorar as transformações da Seção 3 em funções no `transform.py`
+- [ ] Adicionar validação formal de schema com Pandera (Semana 05)
+- [ ] Converter o resultado limpo para Parquet na camada `data/trusted/`
+- [ ] Adicionar logs de descarte (quantas linhas foram removidas e por quê)
+- [ ] *[adicione outros itens identificados durante o diagnóstico]*
