@@ -1,6 +1,6 @@
 # 🎓 PPGCA 2026 — Projeto de Ciência de Dados
 
-> **Mestrado Profissional em Ciência de Dados**
+> **Mestrado Profissional em Computação Aplicada**
 > Prof. Josenildo Silva · IFMA · Turma 2026.1
 
 ---
@@ -9,18 +9,18 @@
 
 | Nome | Matrícula | E-mail |
 |------|-----------|--------|
-| Leonardo dos Santos Pereira | ... | ... |
-| Sarah Sophia Pinto | ... | ... |
+| Leonardo dos Santos Pereira | A definir | santos.leonardo@acad.ifma.edu.br |
+| Sarah Sophia Pinto | A definir | sarahsophiapinto@gmail.com |
 
 ---
 
 ## 📋 Sobre o Projeto
 
-> **TODO:** Descreva o problema de negócio escolhido pelo grupo.
+> **TODO:** Este algoritmo tem como objetivo a fiscalização do uso de dinheiro publico das emendas parlamentaares
 >
-> **Pergunta Central:** Qual é a pergunta de negócio que este projeto responde?
+> **Pergunta Central:** O algoritmo tem o objetivo de encontrar o padrão medio de valor desempenhado por categoria a fim de encontrar anomalias no uso das emendas, em valores que são muito altos em comparação a media
 >
-> **Fonte de Dados:** Qual API ou dataset foi utilizado?
+> **Fonte de Dados:** Dados Abertos do Portal da Transparência
 
 ---
 
@@ -37,8 +37,8 @@
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/ppgca-cd-2026.git
-cd ppgca-cd-2026
+git clone https://github.com/Sleozin/ppgca-cd-2026-project.git
+cd ppgca-cd-2026-project
 
 # 2. Configure as variáveis de ambiente
 cp .env.example .env
@@ -48,23 +48,38 @@ cp .env.example .env
 uv sync
 ```
 
+### Base de dados e Cabecalhos do .env
+
+- [Acesse Aqui](https://portaldatransparencia.gov.br/api-de-dados/cadastrar-email) para gerar seu token na Api de Dados do Portal da Transparência
+
+```bash
+# URL base do Portal da Transparência
+API_BASE_URL=https://api.portaldatransparencia.gov.br/api-de-dados/emendas
+
+# Chave de API da fonte de dados escolhida pelo grupo
+API_KEY=sua_chave_aqui
+
+# Ano de Pesquisa das emendas
+API_YEAR_BASE = seu_ano aqui
+```
 ### Executar o Pipeline Completo
 
 ```bash
 # Sprint 1 — Ingestão (coleta da API para data/raw)
 uv run python src/ingest.py
+```
 
-# Sprint 2 — Qualidade (limpeza + validação Pandera → data/trusted)
-uv run python src/transform.py
+### Resultado esperado
+```
+#Apos execução deve aparecer a ingestão de dados de acordo com
+ppgca-cd-2026-project/
 
-# Sprint 3 — Modelagem (Star Schema + Feature Store → data/mart, data/feat)
-uv run python src/model.py
-
-# Sprint 4 — Data App (dashboard interativo)
-uv run streamlit run src/app.py
-
-# Sprint 4 — Relatório (HTML reprodutível)
-uv run quarto render reports/report.qmd
+├── data/                       # Camadas do Data Lake (não versionadas)
+│   ├── raw/                    # Dados brutos e imutáveis (JSON)
+|       ├── emendas_ano_year-month-day.json
+│   ├── trusted/                # Dados validados (Parquet)
+│   ├── mart/                   # Tabelas analíticas (Fato/Dimensão)
+│   └── feat/                   # Feature Store para ML
 ```
 
 ---
@@ -72,13 +87,13 @@ uv run quarto render reports/report.qmd
 ## 🏗️ Arquitetura do Projeto
 
 ```
-ppgca-cd-2026/
+ppgca-cd-2026-project/
 │
 ├── src/                        # Código-fonte principal
-│   ├── ingest.py               # S1: Coleta da API → data/raw
-│   ├── transform.py            # S2: Limpeza + Pandera → data/trusted
-│   ├── model.py                # S3: Star Schema + Features → data/mart, feat
-│   └── app.py                  # S4: Dashboard Streamlit
+│   ├── ingest.py               # S1: Coleta da API → data/raw - Desenvolido ✅
+│   ├── transform.py            # S2: Limpeza + Pandera → data/trusted - Em Desenvolvimento
+│   ├── model.py                # S3: Star Schema + Features → data/mart, feat - Em Desenvolvimento
+│   └── app.py                  # S4: Dashboard Streamlit - Em Desenvolvimento
 │
 ├── data/                       # Camadas do Data Lake (não versionadas)
 │   ├── raw/                    # Dados brutos e imutáveis (JSON)
@@ -134,7 +149,7 @@ Dashboard Streamlit + Relatório HTML
 
 | Sprint | Prazo | Peso | Entrega |
 |--------|-------|------|---------|
-| **S1 — Infraestrutura** | Semana 02 | 10% | `ingest.py` + repositório configurado |
+| **S1 — Infraestrutura** | Semana 02 | 10% | `ingest.py` + repositório configurado | ✅ - Desenvolvido
 | **S2 — Qualidade** | Semana 06 | 20% | `transform.py` + `data/trusted/*.parquet` |
 | **S3 — Modelagem** | Semana 10 | 25% | `model.py` + Star Schema + Feature Store |
 | **S4 — Produto** | Semana 13 | 25% | `app.py` + `reports/report.html` |
