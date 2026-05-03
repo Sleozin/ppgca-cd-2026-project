@@ -9,9 +9,8 @@
 
 | Nome | Matrícula | E-mail |
 |------|-----------|--------|
-| Integrante 1 | ... | ... |
-| Integrante 2 | ... | ... |
-| Integrante 3 | ... | ... |
+| Leonardo dos Santos Pereira | ... | ... |
+| Sarah Sophia Pinto | ... | ... |
 
 ---
 
