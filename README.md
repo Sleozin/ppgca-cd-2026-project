@@ -10,7 +10,7 @@
 | Nome | Matrícula | E-mail |
 |------|-----------|--------|
 | Leonardo dos Santos Pereira | A definir | santos.leonardo@acad.ifma.edu.br |
-| Sarah Sophia Pinto | A definir | sarahsophiapinto@gmail.com |
+| Sarah Maciel | A definir | sophia.pinto@acad.ifma.edu.br |
 
 ---
 
