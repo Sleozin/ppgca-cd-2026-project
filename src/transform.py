@@ -45,9 +45,25 @@ from schemas.schema import schema
 # CAMINHOS
 # =========================================================
 
-RAW_PATH = Path(
-    "data/raw/emendas_2024_2026-05-25.json"
-)
+RAW_DIR = Path("data/raw")
+
+def get_latest_file(directory: Path, pattern: str = "*.json") -> Path:
+    """
+    Busca o arquivo mais recente dentro de um diretório.
+    """
+    arquivos = list(directory.glob(pattern))
+    
+    if not arquivos:
+        raise FileNotFoundError(f"Nenhum arquivo '{pattern}' encontrado em {directory}")
+        
+    # max() encontra o item com o maior valor. 
+    # Usamos f.stat().st_mtime para pegar o timestamp de modificação de cada arquivo.
+    latest_file = max(arquivos, key=lambda f: f.stat().st_mtime)
+    
+    return latest_file
+
+# Define o RAW_PATH dinamicamente buscando o JSON mais recente
+RAW_PATH = get_latest_file(RAW_DIR)
 
 TRUSTED_PATH = Path(
     "data/trusted/emendas_trusted.parquet"
@@ -71,7 +87,7 @@ def load_data() -> pd.DataFrame:
     Lê arquivo JSON da camada RAW.
     """
 
-    print("Lendo arquivo JSON...")
+    print(f"Lendo arquivo JSON mais recente: {RAW_PATH.name}...")
 
     try:
 

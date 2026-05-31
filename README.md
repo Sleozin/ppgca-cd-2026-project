@@ -9,7 +9,7 @@
 
 | Nome | Matrícula | E-mail |
 |------|-----------|--------|
-| Leonardo dos Santos Pereira | A definir | santos.leonardo@acad.ifma.edu.br |
+| Leonardo dos Santos Pereira | 20261MC.MTC0011 | santos.leonardo@acad.ifma.edu.br |
 | Sarah Maciel | A definir | sophia.pinto@acad.ifma.edu.br |
 
 ---
@@ -90,7 +90,7 @@ ppgca-cd-2026-project/
 ppgca-cd-2026-project/
 │
 ├── src/                        # Código-fonte principal
-│   ├── ingest.py               # S1: Coleta da API → data/raw - Desenvolido ✅
+│   ├── ingest.py               # S1: Coleta da API → data/raw - Desenvolvido ✅
 │   ├── transform.py            # S2: Limpeza + Pandera → data/trusted - Em Desenvolvimento
 │   ├── model.py                # S3: Star Schema + Features → data/mart, feat - Em Desenvolvimento
 │   └── app.py                  # S4: Dashboard Streamlit - Em Desenvolvimento
@@ -103,8 +103,8 @@ ppgca-cd-2026-project/
 │
 ├── notebooks/                  # Análises exploratórias (EDA)
 ├── reports/
-│   ├── report.qmd              # S4: Relatório Quarto (fonte)
-│   └── data_dictionary.md      # S3: Dicionário de dados (gerado)
+│   ├── report.qmd              # S4: Relatório Quarto (fonte) - Em Desenvolvimento
+│   └── data_dictionary.md      # S3: Dicionário de dados (gerado) - Em Desenvolvimento
 │
 ├── .github/
 │   └── workflows/ci.yml        # CI: Verifica reprodutibilidade
