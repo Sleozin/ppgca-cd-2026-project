@@ -22,10 +22,12 @@ data/raw/*
 data/trusted/*
 data/mart/*
 data/feat/*
+data/quarantine/*
 !data/raw/.gitkeep
 !data/trusted/.gitkeep
 !data/mart/.gitkeep
 !data/feat/.gitkeep
+!data/quarantine/.gitkeep
 
 # ==========================
 # DUCKDB (banco local gerado)

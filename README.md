@@ -10,7 +10,7 @@
 | Nome | Matrícula | E-mail |
 |------|-----------|--------|
 | Leonardo dos Santos Pereira | 20261MC.MTC0011 | santos.leonardo@acad.ifma.edu.br |
-| Sarah Maciel | A definir | sophia.pinto@acad.ifma.edu.br |
+| Sarah Maciel | 20261MC.MTC0002 | sophia.pinto@acad.ifma.edu.br |
 
 ---
 
@@ -91,7 +91,7 @@ ppgca-cd-2026-project/
 │
 ├── src/                        # Código-fonte principal
 │   ├── ingest.py               # S1: Coleta da API → data/raw - Desenvolvido ✅
-│   ├── transform.py            # S2: Limpeza + Pandera → data/trusted - Em Desenvolvimento
+│   ├── transform.py            # S2: Limpeza + Pandera → data/trusted ✅ - Desenvolvido
 │   ├── model.py                # S3: Star Schema + Features → data/mart, feat - Em Desenvolvimento
 │   └── app.py                  # S4: Dashboard Streamlit - Em Desenvolvimento
 │
@@ -150,7 +150,7 @@ Dashboard Streamlit + Relatório HTML
 | Sprint | Prazo | Peso | Entrega |
 |--------|-------|------|---------|
 | **S1 — Infraestrutura** | Semana 02 | 10% | `ingest.py` + repositório configurado | ✅ - Desenvolvido
-| **S2 — Qualidade** | Semana 06 | 20% | `transform.py` + `data/trusted/*.parquet` |
+| **S2 — Qualidade** | Semana 06 | 20% | `transform.py` + `data/trusted/*.parquet` | ✅ - Desenvolvido
 | **S3 — Modelagem** | Semana 10 | 25% | `model.py` + Star Schema + Feature Store |
 | **S4 — Produto** | Semana 13 | 25% | `app.py` + `reports/report.html` |
 | **S5 — Demo Day** | Semana 15 | 20% | Pitch + release v1.0 |
