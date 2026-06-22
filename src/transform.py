@@ -7,7 +7,7 @@ Pipeline ETL completo:
 
 1. Lê JSON da camada RAW
 2. Padroniza colunas
-3. Corrige tipos
+3. Corrige tipos (com tratamento monetário PT-BR)
 4. Trata valores nulos
 5. Remove duplicatas
 6. Identifica registros inválidos
@@ -161,6 +161,15 @@ def correct_data_types(
     for coluna in colunas_numericas:
 
         if coluna in df.columns:
+            
+            # Tratamento especial para valores financeiros no formato "1.000,00"
+            if coluna != "ano":
+                df[coluna] = (
+                    df[coluna]
+                    .astype(str)
+                    .str.replace('.', '', regex=False)
+                    .str.replace(',', '.', regex=False)
+                )
 
             df[coluna] = pd.to_numeric(
                 df[coluna],

@@ -3,14 +3,14 @@
 
 ## Data de execução
 
-2026-05-30 01:28:32.018304
+2026-06-21 23:09:55.684768
 
 ---
 
 # Estatísticas Gerais
 
-- Registros lidos: 5653
-- Registros válidos: 5653
+- Registros lidos: 6990
+- Registros válidos: 6990
 - Registros inválidos: 0
 
 ---

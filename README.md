@@ -67,19 +67,33 @@ API_YEAR_BASE = seu_ano aqui
 ```bash
 # Sprint 1 — Ingestão (coleta da API para data/raw)
 uv run python src/ingest.py
+# Sprint 2 - 
+uv run python src/transform.py
+# Sprint 3 - 
+uv run python src/build_mart.py
+uv run quarto render notebooks/eda_modelagem.qmd
 ```
 
 ### Resultado esperado
 ```
-#Apos execução deve aparecer a ingestão de dados de acordo com
+#Apos execução deve aparecer a ingestão de dados, a verificação de qualidade e a analise exploratória de acordo com
 ppgca-cd-2026-project/
 
 ├── data/                       # Camadas do Data Lake (não versionadas)
 │   ├── raw/                    # Dados brutos e imutáveis (JSON)
-|       ├── emendas_ano_year-month-day.json
+|       ├── emendas_ano_year-month-day.json # Após Sprint 1
 │   ├── trusted/                # Dados validados (Parquet)
 │   ├── mart/                   # Tabelas analíticas (Fato/Dimensão)
+|       ├── dim_autor.parquet       # Após Sprint 2
+|       ├── dim_calendario.parquet  # Após Sprint 2
+|       ├── dim_funcao.parquet      # Após Sprint 2
+|       ├── dim_localidade.parquet  # Após Sprint 2
+|       ├── fato_emendas.parquet    # Após Sprint 2
 │   └── feat/                   # Feature Store para ML
+├── notebooks/                  # Visualização
+│   ├── eda_modelagem_files/    # Scripts de visualização
+│   ├── eda_modelagem.html      # Visualização web - Após Sprint 3
+│   └── eda_qualidade.qmd       # Após Sprint 2
 ```
 
 ---
@@ -92,7 +106,7 @@ ppgca-cd-2026-project/
 ├── src/                        # Código-fonte principal
 │   ├── ingest.py               # S1: Coleta da API → data/raw - Desenvolvido ✅
 │   ├── transform.py            # S2: Limpeza + Pandera → data/trusted ✅ - Desenvolvido
-│   ├── model.py                # S3: Star Schema + Features → data/mart, feat - Em Desenvolvimento
+│   ├── build_mart.py           # S3: Star Schema + Features → data/mart, feat - ✅ - Desenvolvido
 │   └── app.py                  # S4: Dashboard Streamlit - Em Desenvolvimento
 │
 ├── data/                       # Camadas do Data Lake (não versionadas)
@@ -104,7 +118,8 @@ ppgca-cd-2026-project/
 ├── notebooks/                  # Análises exploratórias (EDA)
 ├── reports/
 │   ├── report.qmd              # S4: Relatório Quarto (fonte) - Em Desenvolvimento
-│   └── data_dictionary.md      # S3: Dicionário de dados (gerado) - Em Desenvolvimento
+|   ├── quality_report.md       # S2: Relatório de Qualidade dos dados - ✅ - Desenvolvido
+│   └── data_dictionary.md      # S3: Dicionário de dados (gerado) ✅ - Desenvolvido
 │
 ├── .github/
 │   └── workflows/ci.yml        # CI: Verifica reprodutibilidade
@@ -151,7 +166,7 @@ Dashboard Streamlit + Relatório HTML
 |--------|-------|------|---------|
 | **S1 — Infraestrutura** | Semana 02 | 10% | `ingest.py` + repositório configurado | ✅ - Desenvolvido
 | **S2 — Qualidade** | Semana 06 | 20% | `transform.py` + `data/trusted/*.parquet` | ✅ - Desenvolvido
-| **S3 — Modelagem** | Semana 10 | 25% | `model.py` + Star Schema + Feature Store |
+| **S3 — Modelagem** | Semana 10 | 25% | `model.py` + Star Schema + Feature Store | ✅ - Desenvolvido
 | **S4 — Produto** | Semana 13 | 25% | `app.py` + `reports/report.html` |
 | **S5 — Demo Day** | Semana 15 | 20% | Pitch + release v1.0 |
 

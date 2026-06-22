@@ -1,0 +1,123 @@
+---
+title: "Análise Exploratória - Modelagem Dimensional"
+author: "Leonardo dos Santos Pereira e Sarah Sophia Pinto"
+format:
+  html:
+    toc: true
+    code-fold: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+---
+
+## 1. Contexto dos Dados
+
+Nesta etapa, utilizamos a camada `Mart` construída em formato *Star Schema*. O nosso objetivo é extrair inteligência de negócio a partir das emendas parlamentares validadas através de consultas analíticas utilizando o DuckDB.
+
+```{python}
+import duckdb
+import pandas as pd
+import plotly.express as px
+
+# Conectar ao DuckDB e mapear os arquivos Parquet da camada Mart
+con = duckdb.connect()
+con.execute("CREATE VIEW fato AS SELECT * FROM '../data/mart/fato_emendas.parquet'")
+con.execute("CREATE VIEW dim_autor AS SELECT * FROM '../data/mart/dim_autor.parquet'")
+con.execute("CREATE VIEW dim_funcao AS SELECT * FROM '../data/mart/dim_funcao.parquet'")
+con.execute("CREATE VIEW dim_localidade AS SELECT * FROM '../data/mart/dim_localidade.parquet'")
+con.execute("CREATE VIEW dim_calendario AS SELECT * FROM '../data/mart/dim_calendario.parquet'")
+```
+
+## Pergunta 1: Como está distribuído o orçamento executado (valor pago) entre as principais áreas governamentais, e qual a relevância relativa de cada uma?
+
+**Motivação:** Entender para onde o dinheiro está de facto a fluir ajuda a identificar as prioridades reais do orçamento de emendas. Utilizou-se uma *Window Function* para calcular o peso percentual exato de cada função no bolo total.
+
+```{python}
+query_areas = """
+    SELECT 
+        df.funcao,
+        SUM(f.kpi_pago_milhoes) AS total_pago_milhoes,
+        SUM(f.kpi_pago_milhoes) / SUM(SUM(f.kpi_pago_milhoes)) OVER() * 100 AS percentual_total
+    FROM fato f
+    JOIN dim_funcao df ON f.fk_funcao = df.sk_funcao
+    GROUP BY df.funcao
+    ORDER BY total_pago_milhoes DESC
+    LIMIT 10
+"""
+df_areas = con.execute(query_areas).df()
+
+fig1 = px.bar(df_areas, x='funcao', y='total_pago_milhoes', 
+              text_auto='.1f',
+              title='Top Áreas (Funções) por Valor Pago (R$ Milhões)',
+              labels={'funcao': 'Área de Aplicação', 'total_pago_milhoes': 'Valor Pago (Milhões)'})
+fig1.show()
+```
+
+**Conclusão:** A visualização mostra as funções estatais que mais receberam capital real das emendas parlamentares. O cálculo do percentual (`percentual_total`) permite ver a discrepância e o peso exato de áreas fundamentais, como a Saúde ou Urbanismo, face ao total nacional efetivamente pago.
+
+---
+
+## Pergunta 2: Quais são os 5 principais autores/parlamentares que mais aprovaram emendas na área da Saúde por estado?
+
+**Motivação:** O cruzamento de autores com a área da saúde e a localidade de destino permite traçar o perfil dos grandes financiadores do sistema de saúde regionalmente.
+
+*(Nota técnica: Implementação feita com recurso a *Common Table Expressions* (CTE) e à função de particionamento `ROW_NUMBER()`).*
+
+```{python}
+query_autores_saude = """
+    WITH RankAutores AS (
+        SELECT 
+            dl.localidade_gasto,
+            da.nome_autor,
+            SUM(f.kpi_pago_milhoes) AS total_milhoes,
+            ROW_NUMBER() OVER(PARTITION BY dl.localidade_gasto ORDER BY SUM(f.kpi_pago_milhoes) DESC) as ranking
+        FROM fato f
+        JOIN dim_autor da ON f.fk_autor = da.sk_autor
+        JOIN dim_funcao df ON f.fk_funcao = df.sk_funcao
+        JOIN dim_localidade dl ON f.fk_localidade = dl.sk_localidade
+        WHERE df.funcao = 'Saúde' AND dl.localidade_gasto != 'Nacional'
+        GROUP BY dl.localidade_gasto, da.nome_autor
+    )
+    SELECT * FROM RankAutores 
+    WHERE ranking <= 5 
+    ORDER BY total_milhoes DESC
+    LIMIT 15
+"""
+df_autores = con.execute(query_autores_saude).df()
+
+fig2 = px.bar(df_autores, x='localidade_gasto', y='total_milhoes', color='nome_autor', barmode='group',
+             title='Top Autores em Emendas de Saúde (R$ Milhões) por Estado')
+fig2.show()
+```
+
+**Conclusão:** Conseguimos mapear diretamente quem são os atores de maior peso político e financeiro nos repasses de saúde aos estados, evidenciando o foco regional de determinados parlamentares e bancadas, o que frequentemente espelha as suas bases eleitorais.
+
+---
+
+## Pergunta 3: Qual é o perfil de liquidação de emendas? (Taxa de Pagamento)
+
+**Motivação:** Um valor empenhado é apenas uma promessa, não significa dinheiro na conta. Precisamos de saber que tipo de emenda possui a maior taxa de conversão em dinheiro real pago pelo poder Executivo.
+
+*(Nota técnica: Análise com base no KPI `kpi_taxa_pagamento` gerado e armazenado programaticamente na modelagem dimensional).*
+
+```{python}
+query_taxa = """
+    SELECT 
+        da.tipo_emenda,
+        COUNT(*) as total_emendas,
+        AVG(f.kpi_taxa_pagamento) * 100 AS taxa_media_pagamento_pct
+    FROM fato f
+    JOIN dim_autor da ON f.fk_autor = da.sk_autor
+    GROUP BY da.tipo_emenda
+    HAVING COUNT(*) > 10
+    ORDER BY taxa_media_pagamento_pct DESC
+"""
+df_taxa = con.execute(query_taxa).df()
+
+fig3 = px.bar(df_taxa, y='tipo_emenda', x='taxa_media_pagamento_pct', orientation='h',
+             title='Taxa Média de Pagamento Efetivo por Tipo de Emenda (%)')
+fig3.show()
+```
+
+**Conclusão:** Diferentes modalidades de emendas (Bancada, Comissão, Individuais) sofrem de diferentes ritmos e gargalos burocráticos. A taxa de conversão média indica quais os tipos de emendas que têm, historicamente, maior garantia de execução orçamental pelo Governo.
